@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
         stdout(),
         Hide
     )?;
+    let mut is_first = true;
     let finished_future = downloader.start().await?;
     if !args.silence && args.progress {
         let mut bar = ProgressBar::new(62);
@@ -69,14 +70,22 @@ async fn main() -> Result<()> {
                     let downloaded_len = *downloaded_len_receiver.borrow();
                     if let Some(total_len) = total_len {
                         let buf = bar.update(downloaded_len, total_len, speed_state.download_speed())?;
-                        execute!(
-                        stdout(),
-                        Clear(ClearType::CurrentLine),
-                        MoveToPreviousLine(1),
-                        Clear(ClearType::CurrentLine),
-                        MoveToColumn(0),
-                        Print(buf)
-                    )?;
+                        if is_first {
+                            execute!(
+                                stdout(),
+                                Print(buf)
+                            )?;
+                            is_first = false;
+                        } else {
+                            execute!(
+                                stdout(),
+                                Clear(ClearType::CurrentLine),
+                                MoveToPreviousLine(1),
+                                Clear(ClearType::CurrentLine),
+                                MoveToColumn(0),
+                                Print(buf)
+                            )?;
+                        }
                     }
 
                     tokio::time::sleep(Duration::from_millis(100)).await;
